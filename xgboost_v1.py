@@ -74,9 +74,9 @@ test.index = test.index.values + train.shape[0]
 test_index = test.index.values
 
 # For faster iterations
-sub_factor = 10
-# train = train.iloc[::sub_factor, :]
-# train_labels = train_labels.iloc[::sub_factor]
+sub_factor = 4
+train = train.iloc[::sub_factor, :]
+train_labels = train_labels.iloc[::sub_factor]
 
 train_index = train.index.values
 
@@ -134,13 +134,13 @@ best_train = 0
 best_test = 0
 
 # Optimization parameters
-early_stopping = 300
+early_stopping = 100
 param_grid = [
               {
                'silent': [1],
                'nthread': [3],
                'eval_metric': ['auc'],
-               'eta': [0.01],
+               'eta': [0.03],
                'objective': ['binary:logistic'],
                'max_depth': [4],
                # 'min_child_weight': [1],
