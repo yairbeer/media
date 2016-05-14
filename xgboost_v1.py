@@ -43,6 +43,17 @@ def split_ip(df):
     df['IP1'] = list(map(lambda x: int(x[1]), ip_series))
     df['IP2'] = list(map(lambda x: int(x[2]), ip_series))
     return df
+
+
+def col_to_freq(df, col_names):
+    for col in col_names:
+        print('Changing to frequency %s' %col)
+        val_counts = df[col].value_counts()
+        df[col + '_freq'] = np.zeros((df.shape[0],))
+        for i, val in enumerate(df[col].values):
+            df[col + '_freq'].iat[i] = int(val_counts.at[val])
+    return df
+
 """
 Import data
 """
@@ -64,8 +75,8 @@ test_index = test.index.values
 
 # For faster iterations
 sub_factor = 10
-train = train.iloc[::sub_factor, :]
-train_labels = train_labels.iloc[::sub_factor]
+# train = train.iloc[::sub_factor, :]
+# train_labels = train_labels.iloc[::sub_factor]
 
 train_index = train.index.values
 
@@ -78,9 +89,7 @@ dataframe = pd.concat([train, test], axis=0)
 """
 Preprocess
 """
-# print(dataframe['User_ID'].value_counts())  # Need to change to frequency
-# print(dataframe['Domain'].value_counts())  # Need to change to frequency
-# print(dataframe['Ad_slot_ID'].value_counts())  # Need to change to frequency, and parse important words
+# print(dataframe['Ad_slot_ID'].value_counts())  # Need to parse important words
 
 # Parse date (removing is the easiest)
 dataframe = date_parser(dataframe)
@@ -88,7 +97,8 @@ dataframe = date_parser(dataframe)
 dataframe = get_user_tag(dataframe)
 # Split ip into 3 different columns
 dataframe = split_ip(dataframe)
-
+# Change features to frequency of features
+dataframe = col_to_freq(dataframe, ['User_ID', 'Domain', 'Ad_slot_ID'])
 
 # Remove complicated values
 dataframe = dataframe.drop(['User_ID', 'IP', 'URL', 'Domain', 'Anonymous_URL_ID', 'User_Tags', 'Ad_slot_ID'], axis=1)
