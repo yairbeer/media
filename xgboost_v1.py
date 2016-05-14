@@ -75,8 +75,8 @@ test_index = test.index.values
 
 # For faster iterations
 sub_factor = 5
-train = train.iloc[::sub_factor, :]
-train_labels = train_labels.iloc[::sub_factor]
+# train = train.iloc[::sub_factor, :]
+# train_labels = train_labels.iloc[::sub_factor]
 
 train_index = train.index.values
 
@@ -138,7 +138,7 @@ early_stopping = 100
 param_grid = [
               {
                'silent': [1],
-               'nthread': [3],
+               'nthread': [2],
                'eval_metric': ['auc'],
                'eta': [0.03],
                'objective': ['binary:logistic'],
@@ -148,7 +148,7 @@ param_grid = [
                'gamma': [0],
                'subsample': [0.75],
                'colsample_bytree': [0.5],
-               'scale_pos_weight': [0.8, 0.4, 0.2, 0.1],
+               'scale_pos_weight': [0.8],
                'n_monte_carlo': [1],
                'cv_n': [4],
                'test_rounds_fac': [1.2],
@@ -222,17 +222,17 @@ for params in ParameterGrid(param_grid):
         mc_round.append(num_round)
 
     # Getting the mean integer
-    mc_train_pred = (np.mean(np.array(mc_train_pred), axis=0) + 0.5).astype(int)
+    mc_train_pred = np.mean(np.array(mc_train_pred), axis=0)
 
     mc_round_list.append(int(np.mean(mc_round)))
     mc_acc_mean.append(np.mean(mc_auc))
     mc_acc_sd.append(np.std(mc_auc))
-    print('The accuracy range is: %.5f to %.5f and best n_round: %d' %
+    print('The AUC range is: %.5f to %.5f and best n_round: %d' %
           (mc_acc_mean[-1] - mc_acc_sd[-1], mc_acc_mean[-1] + mc_acc_sd[-1], mc_round_list[-1]))
     print_results.append('The accuracy range is: %.5f to %.5f and best n_round: %d' %
                          (mc_acc_mean[-1] - mc_acc_sd[-1], mc_acc_mean[-1] + mc_acc_sd[-1], mc_round_list[-1]))
     print('For ', mc_auc)
-    print('The accuracy of the average prediction is: %.5f' % roc_auc_score(train_labels.values, mc_train_pred))
+    print('The AUC of the average prediction is: %.5f' % roc_auc_score(train_labels.values, mc_train_pred))
     meta_solvers_train.append(mc_train_pred)
 
     # train machine learning
