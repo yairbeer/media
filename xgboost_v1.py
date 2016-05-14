@@ -74,7 +74,7 @@ test.index = test.index.values + train.shape[0]
 test_index = test.index.values
 
 # For faster iterations
-sub_factor = 4
+sub_factor = 5
 train = train.iloc[::sub_factor, :]
 train_labels = train_labels.iloc[::sub_factor]
 
@@ -146,9 +146,10 @@ param_grid = [
                # 'min_child_weight': [1],
                'num_round': [4000],
                'gamma': [0],
-               'subsample': [1.0],
-               'colsample_bytree': [1.0],
-               'n_monte_carlo': [5],
+               'subsample': [0.75],
+               'colsample_bytree': [0.5],
+               'scale_pos_weight': [0.8, 0.4, 0.2, 0.1],
+               'n_monte_carlo': [1],
                'cv_n': [4],
                'test_rounds_fac': [1.2],
                'count_n': [0],
@@ -213,7 +214,6 @@ for params in ParameterGrid(param_grid):
 
             # predict
             predicted_results = xgclassifier.predict(xg_test)
-            print(predicted_results)
             train_predictions[cv_test_index] = predicted_results
 
         print('Accuracy score ', roc_auc_score(train_labels.values, train_predictions))
@@ -257,14 +257,14 @@ for params in ParameterGrid(param_grid):
             mc_pred.append(predicted_results)
 
         meta_solvers_test.append(np.mean(np.array(mc_pred), axis=0))
-        """ Write opt solution """
+        """ Write the last solution (ready for ensemble creation)"""
         print('writing to file')
         mc_train_pred = mc_train_pred
-        print(meta_solvers_test[-1])
+        # print(meta_solvers_test[-1])
         meta_solvers_test[-1] = meta_solvers_test[-1]
-        pd.DataFrame(mc_train_pred).to_csv('train_xgboost_d6.csv')
-        submission_file['status_group'] = meta_solvers_test[-1]
-        submission_file.to_csv("test_xgboost_d6.csv")
+        pd.DataFrame(mc_train_pred).to_csv('train_xgboost_ss5_opt.csv')
+        submission_file['Prediction'] = meta_solvers_test[-1]
+        submission_file.to_csv("test_xgboost_ss5_opt.csv")
 
     # saving best score for printing
     if mc_acc_mean[-1] < best_score:
@@ -286,7 +286,7 @@ print(mc_acc_sd)
 Final Solution
 """
 # optimizing:
-# CV = 4, eta = 0.1
-# Removed 'User_ID', 'IP', 'Region', 'URL', 'Domain', 'Anonymous_URL_ID', 'Key_Page_URL', 
-# 'User_Tags', 'Ad_slot_ID', 'Timestamp':
-
+# CV = 4, eta = 0.03, SS = 4:0.74901148422397401
+# Optimize subsample = [0.5, 0.75, 1] opt = 0.75: 0.75949645412709754
+# Optimize colbytree = [0.25, 0.5, 0.75, 1] opt = 0.5: 0.762793051698
+# Optimize scale_pos_weight = [0.8, 0.4, 0.2, 0.1] opt = 0.8: 0.767150084533
