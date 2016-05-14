@@ -262,9 +262,9 @@ for params in ParameterGrid(param_grid):
         mc_train_pred = mc_train_pred
         # print(meta_solvers_test[-1])
         meta_solvers_test[-1] = meta_solvers_test[-1]
-        pd.DataFrame(mc_train_pred).to_csv('train_xgboost_ss5_opt.csv')
+        pd.DataFrame(mc_train_pred).to_csv('train_xgboost_opt.csv')
         submission_file['Prediction'] = meta_solvers_test[-1]
-        submission_file.to_csv("test_xgboost_ss5_opt.csv")
+        submission_file.to_csv("test_xgboost_opt.csv")
 
     # saving best score for printing
     if mc_acc_mean[-1] < best_score:
