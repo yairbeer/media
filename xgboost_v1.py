@@ -8,18 +8,32 @@ import datetime
 
 
 def date_parser(df):
-    # date_recorder = list(map(lambda x: str(x)[:8], df['Timestamp'].values))
-    # date_recorder = list(map(lambda x: datetime.datetime.strptime(str(x), '%Y%m%d'), date_recorder))
-    # df['year_recorder'] = list(map(lambda x: int(x.strftime('%Y')), date_recorder))
+    date_recorder = list(map(lambda x: str(x), df['Timestamp'].values))
+    df['improved_hour'] = list(map(lambda x: int(x[8:12]), date_recorder))
+    # date_recorder = list(map(lambda x: datetime.datetime.strptime(str(x)[:8], '%Y%m%d'), date_recorder))
     # df['yearly_week_recorder'] = list(map(lambda x: int(x.strftime('%W')), date_recorder))
     # df['month_recorder'] = list(map(lambda x: int(x.strftime('%m')), date_recorder))
     del df['Timestamp']
     return df
 
 
+def count_tags(id_tags_cell):
+    """
+    calculate how many name tags
+    :param id_tags_cell: id tags of a single cell
+    :return: number of id tags
+    """
+    if 'null' in id_tags_cell:
+        return 0
+    else:
+        return len(id_tags_cell)
+
+
 def get_user_tag(df):
     tags_series = list(df['User_Tags'].values)
     tags_series = list(map(lambda x: x.split(','), tags_series))
+    # count tags for each column
+    tags_count = list(map(lambda x: count_tags(x), tags_series))
     tags_list = []
     for search_item in tags_series:
         for tag in search_item:
@@ -31,8 +45,8 @@ def get_user_tag(df):
     for i, search_item in enumerate(tags_series):
         for tag in search_item:
             df_tags.at[df_tags_index[i], tag] = 1
-    # print(df_tags)
     df = pd.concat([df, df_tags], axis=1)
+    df['n_tags'] = tags_count
     return df
 
 
@@ -75,8 +89,8 @@ test_index = test.index.values
 
 # For faster iterations
 sub_factor = 5
-# train = train.iloc[::sub_factor, :]
-# train_labels = train_labels.iloc[::sub_factor]
+train = train.iloc[::sub_factor, :]
+train_labels = train_labels.iloc[::sub_factor]
 
 train_index = train.index.values
 
@@ -101,7 +115,8 @@ dataframe = split_ip(dataframe)
 dataframe = col_to_freq(dataframe, ['User_ID', 'Domain', 'Ad_slot_ID'])
 
 # Remove complicated values
-dataframe = dataframe.drop(['User_ID', 'IP', 'URL', 'Domain', 'Anonymous_URL_ID', 'User_Tags', 'Ad_slot_ID'], axis=1)
+dataframe = dataframe.drop(['User_ID', 'IP', 'URL', 'Domain', 'Anonymous_URL_ID', 'User_Tags', 'Ad_slot_ID', 'Hour'],
+                           axis=1)
 # Factorize str columns
 print(dataframe.columns.values)
 num_cols = []
@@ -111,6 +126,8 @@ for col in dataframe.columns.values:
         dataframe[col] = dataframe[col].factorize()[0]
     else:
         num_cols.append(col)
+
+print(dataframe)
 
 # No need for normalizing in xgboost (using a factor of the derivative as a vector of convergence)
 
@@ -134,19 +151,19 @@ best_train = 0
 best_test = 0
 
 # Optimization parameters
-early_stopping = 100
+early_stopping = 150
 param_grid = [
               {
                'silent': [1],
-               'nthread': [2],
+               'nthread': [3],
                'eval_metric': ['auc'],
                'eta': [0.03],
                'objective': ['binary:logistic'],
                'max_depth': [4],
                # 'min_child_weight': [1],
-               'num_round': [4000],
+               'num_round': [5000],
                'gamma': [0],
-               'subsample': [0.75],
+               'subsample': [0.5, 0.7, 0.9],
                'colsample_bytree': [0.5],
                'scale_pos_weight': [0.8],
                'n_monte_carlo': [1],
@@ -199,6 +216,7 @@ for params in ParameterGrid(param_grid):
         print('The best n_rounds is %d' % num_round)
 
         # Calculate train predictions over optimized number of rounds
+        local_auc = []
         for cv_train_index, cv_test_index in kf:
             X_train, X_test = train.values[cv_train_index, :], train.values[cv_test_index, :]
             y_train = train_labels.iloc[cv_train_index].values.flatten()
@@ -215,9 +233,10 @@ for params in ParameterGrid(param_grid):
             # predict
             predicted_results = xgclassifier.predict(xg_test)
             train_predictions[cv_test_index] = predicted_results
+            local_auc.append(roc_auc_score(y_test, predicted_results))
 
-        print('Accuracy score ', roc_auc_score(train_labels.values, train_predictions))
-        mc_auc.append(roc_auc_score(train_labels.values, train_predictions))
+        print('Accuracy score ', np.mean(local_auc))
+        mc_auc.append(np.mean(local_auc))
         mc_train_pred.append(train_predictions)
         mc_round.append(num_round)
 
@@ -282,11 +301,15 @@ print(params_list)
 print(print_results)
 print(mc_acc_mean)
 print(mc_acc_sd)
+
 """
 Final Solution
 """
+
 # optimizing:
 # CV = 4, eta = 0.03, SS = 4:0.74901148422397401
 # Optimize subsample = [0.5, 0.75, 1] opt = 0.75: 0.75949645412709754
 # Optimize colbytree = [0.25, 0.5, 0.75, 1] opt = 0.5: 0.762793051698
 # Optimize scale_pos_weight = [0.8, 0.4, 0.2, 0.1] opt = 0.8: 0.767150084533
+""" Changed AUC as a mean of all the predicted tests and not of the whole training set (imbalance problems)"""
+# Added number of tags, hour of the day now includes minutes: 0.76060684965984882
