@@ -132,11 +132,8 @@ print(dataframe)
 # No need for normalizing in xgboost (using a factor of the derivative as a vector of convergence)
 
 """
-Split into train and test
+Split into train and test removed in order to save space
 """
-
-train = dataframe.loc[train_index]
-test = dataframe.loc[test_index]
 
 """
 CV
@@ -198,13 +195,12 @@ for params in ParameterGrid(param_grid):
         xgboost_rounds = []
         # Finding optimized number of rounds
         for cv_train_index, cv_test_index in kf:
-            X_train, X_test = train.values[cv_train_index, :], train.values[cv_test_index, :]
             y_train = train_labels.iloc[cv_train_index].values.flatten()
             y_test = train_labels.iloc[cv_test_index].values.flatten()
 
             # train machine learning
-            xg_train = xgboost.DMatrix(X_train, label=y_train)
-            xg_test = xgboost.DMatrix(X_test, label=y_test)
+            xg_train = xgboost.DMatrix(dataframe.loc[train_index].values[cv_train_index, :], label=y_train)
+            xg_test = xgboost.DMatrix(dataframe.loc[train_index].values[cv_test_index, :], label=y_test)
 
             watchlist = [(xg_train, 'train'), (xg_test, 'test')]
 
@@ -218,13 +214,12 @@ for params in ParameterGrid(param_grid):
         # Calculate train predictions over optimized number of rounds
         local_auc = []
         for cv_train_index, cv_test_index in kf:
-            X_train, X_test = train.values[cv_train_index, :], train.values[cv_test_index, :]
             y_train = train_labels.iloc[cv_train_index].values.flatten()
             y_test = train_labels.iloc[cv_test_index].values.flatten()
 
             # train machine learning
-            xg_train = xgboost.DMatrix(X_train, label=y_train)
-            xg_test = xgboost.DMatrix(X_test, label=y_test)
+            xg_train = xgboost.DMatrix(dataframe.loc[train_index].values[cv_train_index, :], label=y_train)
+            xg_test = xgboost.DMatrix(dataframe.loc[train_index].values[cv_test_index, :], label=y_test)
 
             watchlist = [(xg_train, 'train'), (xg_test, 'test')]
 
@@ -254,10 +249,6 @@ for params in ParameterGrid(param_grid):
     print('The AUC of the average prediction is: %.5f' % roc_auc_score(train_labels.values, mc_train_pred))
     meta_solvers_train.append(mc_train_pred)
 
-    # train machine learning
-    xg_train = xgboost.DMatrix(train.values, label=train_labels.values)
-    xg_test = xgboost.DMatrix(test.values)
-
     # predicting the test set
     if params['mc_test']:
         watchlist = [(xg_train, 'train')]
@@ -266,8 +257,8 @@ for params in ParameterGrid(param_grid):
         mc_pred = []
         for i_mc in range(params['n_monte_carlo']):
             params['seed'] = i_mc
-            xg_train = xgboost.DMatrix(train, label=train_labels.values.flatten())
-            xg_test = xgboost.DMatrix(test)
+            xg_train = xgboost.DMatrix(dataframe.loc[train_index], label=train_labels.values.flatten())
+            xg_test = xgboost.DMatrix(dataframe.loc[test_index])
 
             watchlist = [(xg_train, 'train')]
 
