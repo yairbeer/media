@@ -89,8 +89,8 @@ test_index = test.index.values
 
 # For faster iterations
 sub_factor = 5
-train = train.iloc[::sub_factor, :]
-train_labels = train_labels.iloc[::sub_factor]
+# train = train.iloc[::sub_factor, :]
+# train_labels = train_labels.iloc[::sub_factor]
 
 train_index = train.index.values
 
@@ -151,24 +151,24 @@ best_train = 0
 best_test = 0
 
 # Optimization parameters
-early_stopping = 150
+early_stopping = 300
 param_grid = [
               {
                'silent': [1],
                'nthread': [3],
                'eval_metric': ['auc'],
-               'eta': [0.03],
+               'eta': [0.01],
                'objective': ['binary:logistic'],
                'max_depth': [4],
                # 'min_child_weight': [1],
                'num_round': [5000],
                'gamma': [0],
-               'subsample': [0.5, 0.7, 0.9],
-               'colsample_bytree': [0.5],
+               'subsample': [0.9],
+               'colsample_bytree': [0.7],
                'scale_pos_weight': [0.8],
-               'n_monte_carlo': [1],
+               'n_monte_carlo': [10],
                'cv_n': [4],
-               'test_rounds_fac': [1.2],
+               'test_rounds_fac': [1.1],
                'count_n': [0],
                'mc_test': [True]
               }
@@ -281,9 +281,9 @@ for params in ParameterGrid(param_grid):
         mc_train_pred = mc_train_pred
         # print(meta_solvers_test[-1])
         meta_solvers_test[-1] = meta_solvers_test[-1]
-        pd.DataFrame(mc_train_pred).to_csv('train_xgboost_opt.csv')
+        pd.DataFrame(mc_train_pred).to_csv('train_xgboost_opt_mc%d.csv' % i_mc)
         submission_file['Prediction'] = meta_solvers_test[-1]
-        submission_file.to_csv("test_xgboost_opt.csv")
+        submission_file.to_csv("test_xgboost_opt_mc%d.csv" % i_mc)
 
     # saving best score for printing
     if mc_acc_mean[-1] < best_score:
@@ -313,3 +313,7 @@ Final Solution
 # Optimize scale_pos_weight = [0.8, 0.4, 0.2, 0.1] opt = 0.8: 0.767150084533
 """ Changed AUC as a mean of all the predicted tests and not of the whole training set (imbalance problems)"""
 # Added number of tags, hour of the day now includes minutes: 0.76060684965984882
+# Optimize subsample = [0.5, 0.7, 0.9] opt = 0.9: 0.76237735572352383
+# Optimize colbytree = [0.3, 0.5, 0.7, 0.9] opt = 0.7: 0.76337050129882611
+""" Final Submission - no subsampling and finer eta """
+# :
