@@ -309,5 +309,7 @@ Final Solution
 # Added number of tags, hour of the day now includes minutes: 0.76060684965984882
 # Optimize subsample = [0.5, 0.7, 0.9] opt = 0.9: 0.76237735572352383
 # Optimize colbytree = [0.3, 0.5, 0.7, 0.9] opt = 0.7: 0.76337050129882611
+""" No subsampling """
+# Optimize subsample = [0.5, 0.7, 0.9] opt = : 0.
 """ Final Submission - no subsampling and finer eta """
 # Optimize subsample = [4, 6, 8] opt = 4: 0.78115610846018946
